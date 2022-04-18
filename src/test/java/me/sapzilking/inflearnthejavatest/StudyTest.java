@@ -1,7 +1,9 @@
 package me.sapzilking.inflearnthejavatest;
 
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.ParameterContext;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.aggregator.AggregateWith;
 import org.junit.jupiter.params.aggregator.ArgumentsAccessor;
@@ -21,9 +23,12 @@ import java.util.function.Supplier;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
+@ExtendWith(FindSlowTestExtension.class)
 @DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)
 class StudyTest {
 
+    @RegisterExtension
+    static FindSlowTestExtension findSlowTestExtension = new FindSlowTestExtension(1000L);
 
     @DisplayName("스터디 만들기 fast")
     @Tag("fast")
@@ -85,11 +90,13 @@ class StudyTest {
         assertThat(actual.getLimit()).isGreaterThan(0);
     }
 
-    @Test
+//    @Test
 //    @Disabled //해당 테스트를 제외시킨다
     @DisplayName("스터디 만들기 slow")
-    @Tag("slow")
-    void create_new_study_again() {
+//    @Tag("slow")
+    @SlowTest
+    void create_new_study_again() throws InterruptedException {
+        Thread.sleep(1005L);
         System.out.println("create1");
     }
 
