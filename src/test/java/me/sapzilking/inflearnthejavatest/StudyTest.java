@@ -1,6 +1,18 @@
 package me.sapzilking.inflearnthejavatest;
 
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.extension.ParameterContext;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.aggregator.AggregateWith;
+import org.junit.jupiter.params.aggregator.ArgumentsAccessor;
+import org.junit.jupiter.params.aggregator.ArgumentsAggregationException;
+import org.junit.jupiter.params.aggregator.ArgumentsAggregator;
+import org.junit.jupiter.params.converter.ArgumentConversionException;
+import org.junit.jupiter.params.converter.ConvertWith;
+import org.junit.jupiter.params.converter.SimpleArgumentConverter;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.lang.reflect.Executable;
 import java.time.Duration;
@@ -12,8 +24,10 @@ import static org.junit.jupiter.api.Assertions.*;
 @DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)
 class StudyTest {
 
+
+    @DisplayName("스터디 만들기 fast")
+    @Tag("fast")
     @Test
-    @DisplayName("스터디 만들기 😜")
     void create_new_study() {
         /*Study study = new Study(-10);*/
 
@@ -69,18 +83,87 @@ class StudyTest {
         //Junit Third party 라이브러리 중 하나인 AssertJ를 이용
         Study actual = new Study(10);
         assertThat(actual.getLimit()).isGreaterThan(0);
-
-
-
-
     }
 
     @Test
-    @Disabled
-        //해당 테스트를 제외시킨다
+//    @Disabled //해당 테스트를 제외시킨다
+    @DisplayName("스터디 만들기 slow")
+    @Tag("slow")
     void create_new_study_again() {
         System.out.println("create1");
     }
+
+
+    @DisplayName("스터디 만들기")
+    @RepeatedTest(value = 10, name = "{displayName}, {currentRepetition}/{totalRepetitions} ")
+    void repeatTest(RepetitionInfo repetitionInfo) {
+        System.out.println("test" + repetitionInfo.getCurrentRepetition() + "/" +
+                repetitionInfo.getTotalRepetitions());
+    }
+
+    @DisplayName("스터디 만들기")
+    @ParameterizedTest(name = "{index} {displayName} message={0}")
+    @ValueSource(strings = {"날씨가", "많이", "추워지고", "있네요."})
+    @NullAndEmptySource
+    void parameterizedTest(String message) {
+        System.out.println(message);
+    }
+
+    @DisplayName("스터디 만들기")
+    @ParameterizedTest(name = "{index} {displayName} message={0}")
+    @ValueSource(ints = {10, 20, 40})
+    void parameterizedTest2(Integer limit) {
+        System.out.println(limit);
+    }
+
+    @DisplayName("스터디 만들기")
+    @ParameterizedTest(name = "{index} {displayName} message={0}")
+    @CsvSource({"10, '자바 스터디'", "20, 스프링"})
+    void parameterizedTest3(Integer limit, String name) {
+        Study study = new Study(limit, name);
+        System.out.println(study);
+    }
+
+    @DisplayName("하나의 argument 받을 때")
+    @ParameterizedTest(name = "{index} {displayName} message={0}")
+    @ValueSource(ints = {10, 20, 40})
+    void parameterizedTest4(@ConvertWith(StudyConverter.class) Study study) {
+        System.out.println(study.getLimit());
+    }
+
+    //하나의 argument를 받을 때 사용
+    static class StudyConverter extends SimpleArgumentConverter { //하나의 argument를 다른 type으로 변환할 때 적용 됨
+        @Override
+        protected Object convert(Object o, Class<?> aClass) throws ArgumentConversionException {
+            assertEquals(Study.class, aClass, "Can only convert to study");
+            return new Study(Integer.parseInt(o.toString()));
+        }
+    }
+
+    //여러 argument를 받을 때 사용
+    @DisplayName("여러개의 argument받을 때")
+    @ParameterizedTest(name = "{index} {displayName} message={0}")
+    @CsvSource({"10, '자바 스터디'", "20, 스프링"})
+    void parameterizedTest5(ArgumentsAccessor argumentsAccessor) {
+        Study study = new Study(argumentsAccessor.getInteger(0), argumentsAccessor.getString(1));
+        System.out.println(study);
+    }
+    @DisplayName("여러개의 argument받을 때")
+    @ParameterizedTest(name = "{index} {displayName} message={0}")
+    @CsvSource({"10, '자바 스터디'", "20, 스프링"})
+    void parameterizedTest6(@AggregateWith(StudyAggregator.class) Study study) {
+        System.out.println(study);
+    }
+
+    static class StudyAggregator implements ArgumentsAggregator {
+        @Override
+        public Object aggregateArguments(ArgumentsAccessor argumentsAccessor, ParameterContext parameterContext) throws ArgumentsAggregationException {
+            return new Study(argumentsAccessor.getInteger(0), argumentsAccessor.getString(1));
+        }
+    }
+
+
+
 
     //모든 테스트가 실행되기 이전에 딱 한 번만 호출된다
     @BeforeAll
