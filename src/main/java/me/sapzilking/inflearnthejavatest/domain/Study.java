@@ -3,10 +3,9 @@ package me.sapzilking.inflearnthejavatest.domain;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import me.sapzilking.inflearnthejavatest.study.StudyStatus;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
+import javax.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
@@ -19,7 +18,8 @@ public class Study {
     private int limitCount;
     private String name;
     private LocalDateTime openedDateTime;
-    private Long ownerId;
+    @ManyToOne
+    private Member owner;
 
     public Study(int limit, String name) {
         this.limitCount = limit;
@@ -33,10 +33,9 @@ public class Study {
         this.limitCount = limit;
     }
 
-    public void open() {
+    public void publish() {
         this.openedDateTime = LocalDateTime.now();
         this.status = StudyStatus.OPENED;
-
     }
 
 }
