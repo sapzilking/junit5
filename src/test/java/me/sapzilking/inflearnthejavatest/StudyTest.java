@@ -100,7 +100,6 @@ class StudyTest {
         System.out.println("create1");
     }
 
-
     @DisplayName("스터디 만들기")
     @RepeatedTest(value = 10, name = "{displayName}, {currentRepetition}/{totalRepetitions} ")
     void repeatTest(RepetitionInfo repetitionInfo) {
