@@ -20,6 +20,8 @@ import java.util.Optional;
 import java.util.function.Function;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -41,11 +43,6 @@ class StudyServiceTest {
 
             @Override
             public void notify(Study newstudy) {
-
-            }
-
-            @Override
-            public void notify(Member member) {
 
             }
         };
@@ -269,6 +266,7 @@ class StudyServiceTest {
     @DisplayName(value = "Mock 객체 Stubbing 연습")
     @Test
     void stubbingTest(@Mock MemberService memberService, @Mock StudyRepository studyRepository) {
+        // Given
         StudyService studyService = new StudyService(memberService, studyRepository);
         assertNotNull(studyService);
 
@@ -281,10 +279,77 @@ class StudyServiceTest {
         when(memberService.findById(1L)).thenReturn(Optional.of(member));
         when(studyRepository.save(study)).thenReturn(study);
 
+        // When
         studyService.createNewStudy(1L, study);
 
+
+        // Then
         assertNotNull(study.getOwner());
         assertEquals(member, study.getOwner());
         assertThrows(IllegalArgumentException.class, () -> studyService.createNewStudy(2L, study));
+
+        verify(memberService, times(1)).notify(study); //memberService 목 객체에서 study를 사용해서 notify를 1번 호출 하는지 확인
+//        verify(memberService, times(1)).notify(any());
+        verify(memberService, never()).validate(any()); //validate가 전혀 사용되지 않고 있는지
+    }
+
+    @DisplayName(value = "BDD스타일로 변경")
+    @Test
+    void BDDTest(@Mock MemberService memberService, @Mock StudyRepository studyRepository) {
+        // 기존에 사용하던 when, verify가 BDD스타일에서 어색하므로 mockito에서 제공하는 when과 then으로 변경하여 사용해 보는 테스트
+
+        // Given
+        StudyService studyService = new StudyService(memberService, studyRepository);
+        assertNotNull(studyService);
+
+        Member member = new Member();
+        member.setId(1L);
+        member.setEmail("test@email.com");
+
+        Study study = new Study(10, "테스트");
+
+//        when(memberService.findById(1L)).thenReturn(Optional.of(member));
+//        when(studyRepository.save(study)).thenReturn(study);
+        given(memberService.findById(1L)).willReturn(Optional.of(member));
+        given(studyRepository.save(study)).willReturn(study);
+
+        // When
+        studyService.createNewStudy(1L, study);
+
+
+        // Then
+        assertNotNull(study.getOwner());
+        assertEquals(member, study.getOwner());
+        assertThrows(IllegalArgumentException.class, () -> studyService.createNewStudy(2L, study));
+
+//        verify(memberService, times(1)).notify(study); //memberService 목 객체에서 study를 사용해서 notify를 1번 호출 하는지 확인
+//        verify(memberService, times(1)).notify(any());
+//        verify(memberService, never()).validate(any()); //validate가 전혀 사용되지 않고 있는지
+
+        then(memberService).should(times(1)).notify(study);
+
+    }
+
+    @DisplayName(value = "다른 사용자가 볼 수 있도록 스터디를 공개한다.")
+    @Test
+    void openStudy() {
+        // Given
+        StudyService studyService = new StudyService(memberService, studyRepository);
+        Study study = new Study(10, "더 자바 테스트");
+        assertNull(study.getOpenedDateTime());
+
+        // studyRepository Mock 객체의 save 메소드 호출 시 study를 리턴하도록 만들기.
+        given(studyRepository.save(study)).willReturn(study);
+
+        // When
+        studyService.openStudy(study);
+
+        // Then
+        // study의 status가 OPENED로 변경됐는지 확인
+         assertEquals(StudyStatus.OPENED, study.getStatus());
+        // study의 openedDataTime이 null이 아닌지 확인
+        assertNotNull(study.getOpenedDateTime());
+        // memberService의 notify(study)가 호출 됐는지 확인
+        then(memberService).should().notify(study);
     }
 }
